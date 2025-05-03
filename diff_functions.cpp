@@ -1,24 +1,5 @@
 #include "diff.h"
 
-int main() {
-    Node *Root = nullptr;
-
-    Errors err = BuildTreeFromFile("example1.txt", &Root);
-
-    if (err != OK) {
-        printf("tree was parsed\n");
-    } else {
-        printf("wrong format of file\n");
-    }
-    Node *DifRoot = Diff(Root);
-    TreeDumpDot(Root);
-
-    double result = Eval(DifRoot);
-    printf("%lg", result);
-    FreeTree(&Root);
-    return 0;
-}
-
 Errors ReadFileToBuffer(const char* filename, char** buffer) {
     FILE* file = fopen(filename, "r");
     if (!file) return FILE_NOT_OPEN;
@@ -40,24 +21,21 @@ Errors ReadFileToBuffer(const char* filename, char** buffer) {
     return OK;
 }
 
-// Вспомогательная функция для пропуска пробелов
 const char* SkipWhitespace(const char* str) {
     while (isspace(*str)) str++;
     return str;
 }
 
-// Рекурсивная функция построения дерева из префиксной записи
 Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
     *str = SkipWhitespace(*str);
 
     if (**str == '\0') return OK;
 
-    // Обработка открывающей скобки
+
     if (**str == '(') {
-        (*str)++; // Пропускаем '('
+        (*str)++;
         *str = SkipWhitespace(*str);
 
-        // Читаем оператор/функцию
         char token[32] = {0};
         int i = 0;
         while (**str != '\0' && !isspace(**str) && **str != '(' && **str != ')') {
@@ -67,11 +45,9 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
 
         if (i == 0) return INVALID_FORMAT;
 
-        // Создаем узел для оператора/функции
         Errors err = CreateNode(node, token, parent);
         if (err != OK) return err;
 
-        // Рекурсивно строим левое и правое поддеревья
         *str = SkipWhitespace(*str);
         err = BuildTreeFromPrefix(str, &(*node)->left, *node);
         if (err != OK) return err;
@@ -80,13 +56,11 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         err = BuildTreeFromPrefix(str, &(*node)->right, *node);
         if (err != OK) return err;
 
-        // Ожидаем закрывающую скобку
         *str = SkipWhitespace(*str);
         if (**str != ')') return INVALID_FORMAT;
-        (*str)++; // Пропускаем ')'
+        (*str)++;
     }
     else {
-        // Читаем число или переменную
         char token[32] = {0};
         int i = 0;
         while (**str != '\0' && !isspace(**str) && **str != '(' && **str != ')') {
@@ -96,7 +70,6 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
 
         if (i == 0) return INVALID_FORMAT;
 
-        // Создаем узел для числа/переменной
         Errors err = CreateNode(node, token, parent);
         if (err != OK) return err;
     }

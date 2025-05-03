@@ -6,9 +6,22 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
-const double x = 5.0;
+const double VAR_VALUE = 5.0;
 const size_t DUMP_BUFFER_SIZE = 20000;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define DIF_LEFT Diff(node->left)
+
+#define DIF_RIGHT Diff(node->right)
+
+#define COPY_LEFT CopyTree(node->left)
+
+#define COPY_RIGHT CopyTree(node->right)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum Errors
 {
@@ -48,7 +61,7 @@ enum Func  // TODO func
     FUNC_COUNT,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 union NodeValue
 {
@@ -73,12 +86,19 @@ typedef struct Node
     struct Node* parent;
 } Node;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Errors FreeTree(Node **node);
 Errors CreateNode(Node **node, const char *str, Node *parent);
 Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value);
 Errors TreeDumpDot(Node* Root);
 int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE);
+Errors ReadFileToBuffer(const char* filename, char** buffer);
+const char* SkipWhitespace(const char* str);
+Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent);
+Errors BuildTreeFromFile(const char* filename, Node** root);
+double Eval(Node *node);
+Node* Diff(Node *node);
+Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right);
 
 #endif
