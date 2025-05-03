@@ -1,0 +1,37 @@
+digraph G {
+	rankdir = TB;
+	bgcolor="#1e1e2e";
+	node [shape=rectangle, style=filled, fontname=Helvetica, fontsize=12, fillcolor="#89b4fa", color="#cba6f7", fontcolor="#1e1e2e"];
+	node0x4a75040 [shape=plaintext; style=filled; color="#fcf0d2"; fillcolor="#b2d4fc"; label = <
+		         <table BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#a1c4fd" COLOR="#4f4f4f">
+			           <tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: 0x4a75040</b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> 1 </b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> -94.9 </b></FONT></td></tr>
+			           <tr>
+			               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: 0x4a754f0</b></FONT></td>
+			               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: 0x4a75560</b></FONT></td>
+			           </tr>
+		         </table> >];
+	node0x4a754f0 [shape=plaintext; style=filled; color="#fcf0d2"; fillcolor="#b2d4fc"; label = <
+		         <table BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#a1c4fd" COLOR="#4f4f4f">
+			           <tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: 0x4a754f0</b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> 1 </b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> 5 </b></FONT></td></tr>
+			           <tr>
+			               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: (nil)</b></FONT></td>
+			               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: (nil)</b></FONT></td>
+			           </tr>
+		         </table> >];
+	node0x4a75040:left -> node0x4a754f0 [color="#a6e3a1"]
+	node0x4a75560 [shape=plaintext; style=filled; color="#fcf0d2"; fillcolor="#b2d4fc"; label = <
+		         <table BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#a1c4fd" COLOR="#4f4f4f">
+			           <tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: 0x4a75560</b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> 1 </b></FONT></td></tr>
+			           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> 10 </b></FONT></td></tr>
+			           <tr>
+			               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: (nil)</b></FONT></td>
+			               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: (nil)</b></FONT></td>
+			           </tr>
+		         </table> >];
+	node0x4a75040:right -> node0x4a75560 [color="#f9e2af"]
+}

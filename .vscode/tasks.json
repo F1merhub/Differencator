@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build C++ Project",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-g",                  // Включить отладочную информацию
+        "-o",                 // Указать выходной файл
+        "${workspaceFolder}/debug",  // Имя исполняемого файла
+        "${workspaceFolder}/debug.cpp",  // Исходный файл
+        "-Wall",              // Включить все предупреждения
+        "-Wextra",            // Дополнительные предупреждения
+        "-std=c++17"          // Использовать стандарт C++17
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "detail": "Компиляция debug.cpp с помощью g++"
+    }
+  ]
+}
