@@ -2,23 +2,9 @@
 #include <stdlib.h>
 #include "diff.h"
 
-/*
-    Как добавить в новый проект?
-    1.добавить константу DUMP_BUFFER_SIZE +
-    2.изменить название ошибок и структуры дерева.
-    3.добавить заголовки функций.
-    4.изменить положение файла.dot
-    5.изменить кол-во аргументов
-    6.заменить спецификаторы
-
-    +dot -Tpng ./GraphDump/dump.dot -o ./GraphDump/dump.png изменить вызов создания .png
-*/
-
-Errors TreeDumpDot(Node* Root)
-{
+Errors TreeDumpDot(Node* Root) {
     char* buffer = (char*)calloc(DUMP_BUFFER_SIZE, sizeof(char));
-    if (buffer == NULL)
-    {
+    if (buffer == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
         return MEMORY_ALLOCATION_ERROR;
     }
@@ -27,10 +13,10 @@ Errors TreeDumpDot(Node* Root)
 
     // Начало .dot файла
     buffer_len += snprintf(buffer + buffer_len, DUMP_BUFFER_SIZE - (size_t)buffer_len,
-                           "digraph G {\n"
-                           "\trankdir = TB;\n"
-                           "\tbgcolor=\"#1e1e2e\";\n"
-                           "\tnode [shape=rectangle, style=filled, fontname=Helvetica, fontsize=12, fillcolor=\"#89b4fa\", color=\"#cba6f7\", fontcolor=\"#1e1e2e\"];\n");
+                         "digraph G {\n"
+                         "\trankdir = TB;\n"
+                         "\tbgcolor=\"#1e1e2e\";\n"
+                         "\tnode [shape=rectangle, style=filled, fontname=Helvetica, fontsize=12, fillcolor=\"#89b4fa\", color=\"#cba6f7\", fontcolor=\"#1e1e2e\"];\n");
 
     // Генерация графа
     buffer_len += GenerateGraph(Root, buffer, &buffer_len, DUMP_BUFFER_SIZE);
@@ -38,79 +24,107 @@ Errors TreeDumpDot(Node* Root)
     buffer_len += snprintf(buffer + buffer_len, DUMP_BUFFER_SIZE - (size_t)buffer_len, "}\n");
 
     FILE* dump_file = fopen("./GraphDump/dump.dot", "w+");
-    if (dump_file == NULL)
-    {
+    if (dump_file == NULL) {
         fprintf(stderr, "Failed to open dump.dot\n");
         free(buffer);
         return FILE_NOT_OPEN;
     }
 
     fprintf(dump_file, "%s", buffer);
-
     fclose(dump_file);
     free(buffer);
 
     return OK;
 }
 
-int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE)
-{
+int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER_SIZE) {
     if (!node) return 0;
-    // NOTE случай раздельного заполнения для случай, когда используются разные спецификаторы
-    // *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-    //                         "\tnode%p [shape=plaintext; style=filled; color=\"#fcf0d2\"; fillcolor=\"#b2d4fc\"; label = <\n"
-    //                         "\t\t         <table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"6\" BGCOLOR=\"#a1c4fd\" COLOR=\"#4f4f4f\">\n"
-    //                         "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: %p</b></FONT></td></tr>\n"
-    //                         "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> %d </b></FONT></td></tr>\n" // NOTE для добавления вывода какого либо параметра узла снизу, просто добавить данную строку, добавить аргумент и заменить параметр
-    //                         "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> %lg </b></FONT></td></tr>\n"
-    //                         "\t\t\t           <tr>\n"
-    //                         "\t\t\t               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
-    //                         "\t\t\t               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: %p</b></FONT></td>\n"
-    //                         "\t\t\t           </tr>\n"
-    //                         "\t\t         </table> >];\n",
-    //                         node, node, node->type, node->value.num, node->left, node->right);
 
     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
                        "\tnode%p [shape=plaintext; style=filled; color=\"#fcf0d2\"; fillcolor=\"#b2d4fc\"; label = <\n"
-                       "\t\t         <table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"6\" BGCOLOR=\"#a1c4fd\" COLOR=\"#4f4f4f\">\n"
-                       "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: %p</b></FONT></td></tr>\n"
-                       "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Type: <b> %d </b></FONT></td></tr>\n",
-                       node, node, node->type);
+                       "\t\t<table BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"6\" BGCOLOR=\"#a1c4fd\" COLOR=\"#4f4f4f\">\n"
+                       "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: %p</b></FONT></td></tr>\n"
+                       "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Type: <b>",
+                       node, node);
 
-    // Вывод значения в зависимости от типа
-    if (node->type == OP) {
-        *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                                "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> %d </b></FONT></td></tr>\n",
-                                node->value.op);
-    } else {
-        *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                                "\t\t\t           <tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b> %lg </b></FONT></td></tr>\n",
-                                node->value.num);
+    // Вывод типа узла
+    switch (node->type) {
+        case OP: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "OP"); break;
+        case NUM: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "NUM"); break;
+        case FUNC: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "FUNC"); break;
+        case VAR: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "VAR"); break;
+        default: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "UNKNOWN"); break;
     }
 
-    // Продолжение строки
+    *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "</b></FONT></td></tr>\n");
+
+    switch (node->type) {
+        case OP :{
+            char value = '\0';
+            switch (node->value.op) {
+                case ADD:
+                    value = '+';
+                    break;
+                case SUB:
+                    value = '-';
+                    break;
+                case MUL:{
+                    value = '*';
+                    break;
+                }
+                case DIV:
+                    value = '/';
+                    break;
+                default:
+                    assert(0);
+            }
+            *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%c</b></FONT></td></tr>\n",
+                                  value);
+            break;
+        }
+        case NUM:
+            *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%lg</b></FONT></td></tr>\n",
+                                  node->value.num);
+            break;
+        // case FUNC:
+        //     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+        //                           "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
+        //                           node->value.func);
+        //     break;
+        case VAR:
+            *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
+                                  "x");
+            break;
+        default:
+            *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>UNKNOWN</b></FONT></td></tr>\n");
+            break;
+    }
+
+    // Завершение таблицы и добавление связей
     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                            "\t\t\t           <tr>\n"
-                            "\t\t\t               <td WIDTH='150' PORT='left'  align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
-                            "\t\t\t               <td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: %p</b></FONT></td>\n"
-                            "\t\t\t           </tr>\n"
-                            "\t\t         </table> >];\n",
-                            node->left, node->right);
+                          "\t\t\t<tr>\n"
+                          "\t\t\t\t<td WIDTH='150' PORT='left' align='center'><FONT COLOR='#006400'><b>Left: %p</b></FONT></td>\n"
+                          "\t\t\t\t<td WIDTH='150' PORT='right' align='center'><FONT COLOR='#b94e48'><b>Right: %p</b></FONT></td>\n"
+                          "\t\t\t</tr>\n"
+                          "\t\t</table> >];\n",
+                          node->left, node->right);
 
     // Рекурсивно генерируем левое поддерево
-    if (node->left)
-    {
+    if (node->left) {
         *buffer_len += GenerateGraph(node->left, buffer, buffer_len, BUFFER_SIZE);
         *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                                 "\tnode%p:left -> node%p [color=\"#a6e3a1\"]\n", node, node->left);
+                              "\tnode%p:left -> node%p [color=\"#a6e3a1\"]\n", node, node->left);
     }
 
     // Рекурсивно генерируем правое поддерево
-    if (node->right)
-    {
+    if (node->right) {
         *buffer_len += GenerateGraph(node->right, buffer, buffer_len, BUFFER_SIZE);
         *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                                 "\tnode%p:right -> node%p [color=\"#f9e2af\"]\n", node, node->right);
+                              "\tnode%p:right -> node%p [color=\"#f9e2af\"]\n", node, node->right);
     }
 
     return 0;

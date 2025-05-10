@@ -34,11 +34,11 @@ DEBUG_SOURCE = src/debug1.cpp   # дебажный файл
 DEBUG_OBJECT = $(BUILD_DIR)/src/debug1.o
 DEBUG_EXECUTABLE = debug_prog
 
-.PHONY: all clean debug
+.PHONY: all clean debug1
 
 all: $(EXECUTABLE)
 
-debug: $(DEBUG_EXECUTABLE)
+debug1: $(DEBUG_EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
 	@$(CXX) $(CXXFLAGS) $(COMMONIC) $^ -o $@

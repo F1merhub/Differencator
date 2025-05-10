@@ -15,9 +15,9 @@ if [[ "$1" != "diff" && "$1" != "eval" ]]; then
 fi
 
 MODE="$1"
-EXP_DIR="./tests/${MODE^}Expressions"
-ANS_DIR="./tests/${MODE^}Answers"
-OUT_DIR="./tests/${MODE^}Output"
+EXP_DIR="./tests/Expressions/${MODE^}Expressions"
+ANS_DIR="./tests/Answers/${MODE^}Answers"
+OUT_DIR="./tests/Output/${MODE^}Output"
 BIN="./tests/tests"
 
 mkdir -p "$OUT_DIR"
