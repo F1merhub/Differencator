@@ -1,6 +1,6 @@
 #include "diff.h"
 
-//TODO Тейлор, рекурсивный спуск, Латех файл, define, функции, юнит тесты, makefile, свертка констант.
+//TODO Тейлор, рекурсивный спуск, Латех файл, define, функции, свертка констант.
 
 int main() {
     Node *Root = nullptr;
@@ -16,8 +16,8 @@ int main() {
 
     Node *DifRoot = Diff(Root);
 
-    TreeDumpDot(Root);
-    // TreeDumpDot(DifRoot);
+    // TreeDumpDot(Root);
+    TreeDumpDot(DifRoot);
 
     double result = Eval(DifRoot);
     printf("Производная функции в точке %lg равна: %lg\n", VAR_VALUE, result);
