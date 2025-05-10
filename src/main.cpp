@@ -16,8 +16,8 @@ int main() {
 
     // TreeDumpDot(Root);
     Node *DifRoot = Diff(Root);
-    TreeDumpDot(DifRoot);
-
+//     TreeDumpDot(DifRoot);
+//
     double result = Eval(DifRoot);
     printf("Производная функции в точке %lg равна: %lg\n", VAR_VALUE, result);
 

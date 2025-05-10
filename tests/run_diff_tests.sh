@@ -9,23 +9,15 @@ COLOR_FAIL="\033[31m"
 COLOR_INFO="\033[34m"
 COLOR_WARN="\033[33m"
 
-if [[ "$1" != "diff" && "$1" != "eval" ]]; then
-    echo -e "${COLOR_FAIL}Error: Unknown mode. Use 'diff' or 'eval' as first argument${COLOR_RESET}"
-    exit 1
-fi
-
-MODE="$1"
-EXP_DIR="./tests/${MODE^}Expressions"
-ANS_DIR="./tests/${MODE^}Answers"
-OUT_DIR="./tests/${MODE^}Output"
+EXP_DIR="./tests/EvalExpressions"
+ANS_DIR="./tests/EvalAnswers"
+OUT_DIR="./tests/EvalOutput"
 BIN="./tests/tests"
 
 mkdir -p "$OUT_DIR"
 
 pass=0
 fail=0
-
-echo -e "${COLOR_INFO}Running in $MODE mode${COLOR_RESET}"
 
 for expr_file in "$EXP_DIR"/*.txt; do # проход по всем .txt в этой директории
     base=$(basename "$expr_file" .txt)
@@ -37,7 +29,7 @@ for expr_file in "$EXP_DIR"/*.txt; do # проход по всем .txt в эт�
         continue
     fi
 
-    $BIN $MODE "$expr_file" "$out_file"
+    $BIN eval "$expr_file" "$out_file"
 
     expected=$(<"$ans_file")
     actual=$(<"$out_file")

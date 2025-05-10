@@ -23,9 +23,9 @@ COMMONIC = -I./include
 
 BUILD_DIR = tests/build
 
-EXECUTABLE = tests
+EXECUTABLE = ./tests/tests
 
-SOURCES = tests/eval.cpp src/diff_functions.cpp src/DiffGraphDump.cpp
+SOURCES = tests/main.cpp src/diff_functions.cpp src/DiffGraphDump.cpp
 
 OBJECTS = $(addprefix $(BUILD_DIR)/, $(SOURCES:%.cpp=%.o))
 DEPENDS = $(OBJECTS:.o=.d)
