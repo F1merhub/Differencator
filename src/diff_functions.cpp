@@ -29,17 +29,16 @@ const char* SkipWhitespace(const char* str) {
 Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
     *str = SkipWhitespace(*str);
 
-    if (**str == '\0') return OK;
+    if ((*str)[0] == '\0') return OK;
 
-
-    if (**str == '(') {
+    if ((*str)[0] == '(') {
         (*str)++;
         *str = SkipWhitespace(*str);
 
         char token[32] = {0};
         int i = 0;
-        while (**str != '\0' && !isspace(**str) && **str != '(' && **str != ')') {
-            token[i++] = **str;
+        while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
+            token[i++] = (*str)[0];
             (*str)++;
         }
 
@@ -57,14 +56,14 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         if (err != OK) return err;
 
         *str = SkipWhitespace(*str);
-        if (**str != ')') return INVALID_FORMAT;
+        if ((*str)[0] != ')') return INVALID_FORMAT;
         (*str)++;
     }
     else {
         char token[32] = {0};
         int i = 0;
-        while (**str != '\0' && !isspace(**str) && **str != '(' && **str != ')') {
-            token[i++] = **str;
+        while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
+            token[i++] = (*str)[0];
             (*str)++;
         }
 
@@ -143,7 +142,7 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
     }
     else if (strlen(str) == 1) {
 
-        if (isalpha(str[0])) { // TODO нужно ли хранить имя переменной и норм ли использовать глоб переменную
+        if (isalpha(str[0])) {
             *type = VAR;
             return OK;
         }
@@ -160,7 +159,7 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
         }
     }
     assert(0); // TODO func case
-
+    return OK;
 }
 
 double Eval(Node *node)
@@ -173,7 +172,7 @@ double Eval(Node *node)
     {
         switch (node->value.op)
         {
-            case ADD: return Eval(node->left) + Eval(node->right); // NOTE можно сделать define, дед сказал здесь плохо
+            case ADD: return Eval(node->left) + Eval(node->right);
             case SUB: return Eval(node->left) - Eval(node->right);
             case MUL: return Eval(node->left) * Eval(node->right);
             case DIV: return Eval(node->left) / Eval(node->right);
@@ -219,7 +218,6 @@ Node* CopyTree(Node *root) {
     return node;
 }
 
-
 Node* Diff(Node *node) {
     assert(node);
 
@@ -238,16 +236,25 @@ Node* Diff(Node *node) {
             case SUB:
                 return NewNode(OP, NodeValue {.op = SUB}, DIF_LEFT, DIF_RIGHT);
             case MUL:
-                return NewNode(OP, NodeValue {.op = ADD}, (NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_RIGHT)), (NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT)));
-            case DIV:
-                return NewNode(OP, NodeValue {.op = DIV}, (NewNode(OP, NodeValue {.op = SUB}, (NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_LEFT)), NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT))), NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, COPY_RIGHT));
+                return NewNode(OP, NodeValue {.op = ADD},
+                       NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_RIGHT),
+                       NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT));
+            case DIV: // TODO need debug
+                return  NewNode(OP, NodeValue {.op = DIV},
+                            NewNode(OP, NodeValue {.op = SUB},
+                                NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_RIGHT),
+                                NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT)),
+                            NewNode(OP, NodeValue {.op = MUL}, COPY_RIGHT, COPY_RIGHT));
             case POW: // TODO pow
                 assert(0);
             default:
                 return nullptr;
         }
     }
-    assert(0);
+    if (node->type == FUNC)
+    {
+        assert(0); // TODO обработка функций
+    }
 
     return nullptr;
 }
