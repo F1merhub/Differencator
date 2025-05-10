@@ -1,8 +1,10 @@
 #include "diff.h"
+#include "dsl.h"
 
 Errors ReadFileToBuffer(const char* filename, char** buffer) {
     FILE* file = fopen(filename, "r");
-    if (!file) return FILE_NOT_OPEN;
+    if (!file)
+        return FILE_NOT_OPEN;
 
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
@@ -40,20 +42,40 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
             token[i++] = (*str)[0];
             (*str)++;
+            if (i >= 31) return INVALID_FORMAT;
         }
 
         if (i == 0) return INVALID_FORMAT;
 
-        Errors err = CreateNode(node, token, parent);
-        if (err != OK) return err;
+        // Проверка на специальные константы перед созданием узла
+        if (strcmp(token, "e") == 0) {
+            *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
+            (*node)->parent = parent;
+        }
+        else if (strcmp(token, "pi") == 0) {
+            *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
+            (*node)->parent = parent;
+        }
+        else {
+            Errors err = CreateNode(node, token, parent);  // Объявляем err здесь
+            if (err != OK) return err;
+        }
 
-        *str = SkipWhitespace(*str);
-        err = BuildTreeFromPrefix(str, &(*node)->left, *node);
-        if (err != OK) return err;
+        if ((*node)->type == FUNC) {
+            *str = SkipWhitespace(*str);
+            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);  // Объявляем err
+            if (err != OK) return err;
+            (*node)->right = NULL;
+        }
+        else {
+            *str = SkipWhitespace(*str);
+            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);  // Объявляем err
+            if (err != OK) return err;
 
-        *str = SkipWhitespace(*str);
-        err = BuildTreeFromPrefix(str, &(*node)->right, *node);
-        if (err != OK) return err;
+            *str = SkipWhitespace(*str);
+            err = BuildTreeFromPrefix(str, &(*node)->right, *node);  // Повторно используем err
+            if (err != OK) return err;
+        }
 
         *str = SkipWhitespace(*str);
         if ((*str)[0] != ')') return INVALID_FORMAT;
@@ -65,12 +87,24 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
             token[i++] = (*str)[0];
             (*str)++;
+            if (i >= 31) return INVALID_FORMAT;
         }
 
         if (i == 0) return INVALID_FORMAT;
 
-        Errors err = CreateNode(node, token, parent);
-        if (err != OK) return err;
+        // Проверка на специальные константы для терминальных узлов
+        if (strcmp(token, "e") == 0) {
+            *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
+            (*node)->parent = parent;
+        }
+        else if (strcmp(token, "pi") == 0) {
+            *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
+            (*node)->parent = parent;
+        }
+        else {
+            Errors err = CreateNode(node, token, parent);  // Объявляем err
+            if (err != OK) return err;
+        }
     }
 
     return OK;
@@ -121,6 +155,38 @@ Errors CreateNode(Node **dest, const char *str, Node *parent) { // NOTE осво
     return OK;
 }
 
+const char* OpFuncValue(enum NodeType type, int value) {
+    assert((value >= 0) && ((type == OP) || (type == FUNC)));
+
+    Decoder op_array[] = {
+        {"+",     ADD},
+        {"-",     SUB},
+        {"*",     MUL},
+        {"/",     DIV},
+        {"^",     POW},
+    };
+
+    Decoder func_array[] = { // TODO остальное
+        {"sin",     ADD},
+        {"cos",     SUB},
+    };
+
+    int op_count = sizeof(op_array) / sizeof(op_array[0]);
+    int func_count = sizeof(func_array) / sizeof(func_array[0]);
+
+    assert(value < op_count && value < func_count);
+
+    switch(type) {
+        case OP:
+            return op_array[value].name;
+            break;
+        case FUNC:
+            return func_array[value].name;
+            break;
+    }
+    return {0};
+}
+
 Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
     assert(str != nullptr && type != nullptr && value != nullptr);
 
@@ -131,6 +197,12 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
         {"/",     DIV},
         {"^",     POW},
     };
+
+    Decoder func_array[] = { // TODO остальное
+        {"sin",     ADD},
+        {"cos",     SUB},
+    };
+
 
     char* endptr = nullptr;
     double num = strtod(str, &endptr);
@@ -158,7 +230,18 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
             return INVALID_TYPE;
         }
     }
-    assert(0); // TODO func case
+    else {
+        int func_count = sizeof(func_array) / sizeof(func_array[0]);
+        for (int i = 0; i < func_count; i++) {
+            if (strcmp(str, func_array[i].name) == 0) {
+                *type = FUNC;
+                value->func = (enum Func)op_array[i].code;
+                return OK;
+            }
+        }
+        return INVALID_TYPE;
+    }
+
     return OK;
 }
 
@@ -183,8 +266,13 @@ double Eval(Node *node)
                 return INVALID_TYPE;
         }
     }
-    // TODO добавить функции
-    assert(0);
+   if (node->type == FUNC) {
+        switch(node->value.func) {
+            case SIN: return sin(Eval(node->left));
+            case COS: return cos(Eval(node->left));
+        }
+    }
+
     return OK;
 }
 
@@ -220,7 +308,6 @@ Node* CopyTree(Node *root) {
 
 Node* Diff(Node *node) {
     assert(node);
-
     if (node->type == NUM)
         return NewNode(NUM, NodeValue {.num = 0}, nullptr, nullptr);
 
@@ -239,21 +326,45 @@ Node* Diff(Node *node) {
                 return NewNode(OP, NodeValue {.op = ADD},
                        NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_RIGHT),
                        NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT));
-            case DIV: // TODO need debug
+            case DIV:
                 return  NewNode(OP, NodeValue {.op = DIV},
                             NewNode(OP, NodeValue {.op = SUB},
                                 NewNode(OP, NodeValue {.op = MUL}, DIF_LEFT, COPY_RIGHT),
                                 NewNode(OP, NodeValue {.op = MUL}, COPY_LEFT, DIF_RIGHT)),
                             NewNode(OP, NodeValue {.op = MUL}, COPY_RIGHT, COPY_RIGHT));
-            case POW: // TODO pow
-                assert(0);
+            case POW:
+                return NewNode(OP, NodeValue {.op = ADD},
+                       NewNode(OP, NodeValue {.op = MUL},
+                           NewNode(OP, NodeValue {.op = MUL},
+                               COPY_RIGHT,
+                               NewNode(OP, NodeValue {.op = POW},
+                                   COPY_LEFT,
+                                   NewNode(OP, NodeValue {.op = SUB},
+                                       COPY_RIGHT,
+                                       NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr)))),
+                           DIF_LEFT),
+                       NewNode(OP, NodeValue {.op = MUL},
+                           NewNode(OP, NodeValue {.op = MUL},
+                               NewNode(OP, NodeValue {.op = POW},
+                                   COPY_LEFT,
+                                   COPY_RIGHT),
+                               NewNode(FUNC, NodeValue {.func = LN}, COPY_LEFT, nullptr)),
+                           DIF_RIGHT));
             default:
                 return nullptr;
         }
     }
     if (node->type == FUNC)
     {
-        assert(0); // TODO обработка функций
+        switch(node->value.func) {
+            case SIN:
+                return  NewNode(OP, NodeValue {.op = MUL},
+                            NewNode(FUNC, NodeValue {.func = COS}, COPY_LEFT, nullptr),
+                            DIF_LEFT);
+            // case COS:
+            default:
+                assert(0);
+        }
     }
 
     return nullptr;

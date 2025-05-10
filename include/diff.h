@@ -1,6 +1,7 @@
 #ifndef _DIFF_H
 #define _DIFF_H
 
+#define _USE_MATH_DEFINES
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -8,18 +9,8 @@
 #include <ctype.h>
 #include <math.h>
 
-const double VAR_VALUE = 5.0;
+const double VAR_VALUE = M_PI;
 const size_t DUMP_BUFFER_SIZE = 50000;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define DIF_LEFT Diff(node->left)
-
-#define DIF_RIGHT Diff(node->right)
-
-#define COPY_LEFT CopyTree(node->left)
-
-#define COPY_RIGHT CopyTree(node->right)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,14 +42,10 @@ enum Op
     POW
 };
 
-enum Func  // TODO func
+enum Func // TODO остальное
 {
     SIN,
     COS,
-    LOG,
-    EXP,
-
-    FUNC_COUNT,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,5 +87,6 @@ Errors BuildTreeFromFile(const char* filename, Node** root);
 double Eval(Node *node);
 Node* Diff(Node *node);
 Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right);
+const char* OpFuncValue(enum NodeType type, int value);
 
 #endif

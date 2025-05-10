@@ -5,7 +5,7 @@
 int main() {
     Node *Root = nullptr;
 
-    Errors err = BuildTreeFromFile("./expression.txt", &Root); //
+    Errors err = BuildTreeFromFile("./expression.txt", &Root);
 
     if (err == OK) {
         printf("tree was parsed\n");
@@ -17,8 +17,9 @@ int main() {
     Node *DifRoot = Diff(Root);
 
     // TreeDumpDot(Root);
-    TreeDumpDot(DifRoot);
-
+    // TreeDumpDot(DifRoot);
+    // double result = Eval(Root);
+    // printf("%lg", result);
     double result = Eval(DifRoot);
     printf("Производная функции в точке %lg равна: %lg\n", VAR_VALUE, result);
 

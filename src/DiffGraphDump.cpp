@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "diff.h"
+#include "dsl.h"
 
 Errors TreeDumpDot(Node* Root) {
     char* buffer = (char*)calloc(DUMP_BUFFER_SIZE, sizeof(char));
@@ -60,26 +59,9 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
 
     switch (node->type) {
         case OP :{
-            char value = '\0';
-            switch (node->value.op) {
-                case ADD:
-                    value = '+';
-                    break;
-                case SUB:
-                    value = '-';
-                    break;
-                case MUL:{
-                    value = '*';
-                    break;
-                }
-                case DIV:
-                    value = '/';
-                    break;
-                default:
-                    assert(0);
-            }
+            const char* value = OpFuncValue(OP, node->value.op);
             *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%c</b></FONT></td></tr>\n",
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
                                   value);
             break;
         }
@@ -88,11 +70,13 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
                                   "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%lg</b></FONT></td></tr>\n",
                                   node->value.num);
             break;
-        // case FUNC:
-        //     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
-        //                           "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
-        //                           node->value.func);
-        //     break;
+        case FUNC: {
+            const char* value = OpFuncValue(FUNC, node->value.func);
+            *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
+                                  "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
+                                  value);
+            break;
+        }
         case VAR:
             *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
                                   "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",

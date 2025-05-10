@@ -1,4 +1,5 @@
 #include "diff.h"
+#include "dsl.h"
 
 Errors DiffTests(char* argv[]);
 Errors EvalTests(char* argv[]);
