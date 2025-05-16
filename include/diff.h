@@ -11,6 +11,7 @@
 
 const double VAR_VALUE = M_PI;
 const size_t DUMP_BUFFER_SIZE = 50000;
+const int NAME_SIZE = 10;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +31,7 @@ enum NodeType
     OP,
     NUM,
     FUNC,
-    VAR
+    VAR,
 };
 
 enum Op
@@ -39,13 +40,17 @@ enum Op
     SUB,
     MUL,
     DIV,
-    POW
+    POW,
 };
 
 enum Func // TODO остальное
 {
     SIN,
     COS,
+    TAN,
+    COT,
+    LN,
+    EXP,
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +92,5 @@ Errors BuildTreeFromFile(const char* filename, Node** root);
 double Eval(Node *node);
 Node* Diff(Node *node);
 Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right);
-const char* OpFuncValue(enum NodeType type, int value);
-
+Errors OpFuncValue(enum NodeType type, int value, char* str);
 #endif

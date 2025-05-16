@@ -45,7 +45,6 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
                        "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#3b4252'><b>Node: %p</b></FONT></td></tr>\n"
                        "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Type: <b>",
                        node, node);
-
     // Вывод типа узла
     switch (node->type) {
         case OP: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "OP"); break;
@@ -55,14 +54,19 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
         default: *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "UNKNOWN"); break;
     }
 
+
     *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len, "</b></FONT></td></tr>\n");
 
-    switch (node->type) {
+    switch (node->type) { // Ломается тут
         case OP :{
-            const char* value = OpFuncValue(OP, node->value.op);
+            char* value_op = (char*)calloc(NAME_SIZE, sizeof(char));
+            if (value_op == nullptr)
+                return MEMORY_ALLOCATION_ERROR;
+            OpFuncValue(OP, node->value.op, value_op);
             *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
                                   "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
-                                  value);
+                                  value_op);
+            free(value_op);
             break;
         }
         case NUM:
@@ -71,10 +75,15 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
                                   node->value.num);
             break;
         case FUNC: {
-            const char* value = OpFuncValue(FUNC, node->value.func);
+            char* value_func = (char*)calloc(NAME_SIZE, sizeof(char));
+            if (value_func == nullptr)
+                return MEMORY_ALLOCATION_ERROR;
+            OpFuncValue(FUNC, node->value.func, value_func);
+
             *buffer_len += snprintf(buffer + *buffer_len, BUFFER_SIZE - (size_t)*buffer_len,
                                   "\t\t\t<tr><td align='center' colspan='2'><FONT COLOR='#2e8b57'>Value: <b>%s</b></FONT></td></tr>\n",
-                                  value);
+                                  value_func);
+            free(value_func);
             break;
         }
         case VAR:

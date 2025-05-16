@@ -47,7 +47,6 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
 
         if (i == 0) return INVALID_FORMAT;
 
-        // Проверка на специальные константы перед созданием узла
         if (strcmp(token, "e") == 0) {
             *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
             (*node)->parent = parent;
@@ -57,23 +56,23 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
             (*node)->parent = parent;
         }
         else {
-            Errors err = CreateNode(node, token, parent);  // Объявляем err здесь
+            Errors err = CreateNode(node, token, parent);
             if (err != OK) return err;
         }
 
         if ((*node)->type == FUNC) {
             *str = SkipWhitespace(*str);
-            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);  // Объявляем err
+            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
             if (err != OK) return err;
             (*node)->right = NULL;
         }
         else {
             *str = SkipWhitespace(*str);
-            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);  // Объявляем err
+            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
             if (err != OK) return err;
 
             *str = SkipWhitespace(*str);
-            err = BuildTreeFromPrefix(str, &(*node)->right, *node);  // Повторно используем err
+            err = BuildTreeFromPrefix(str, &(*node)->right, *node);
             if (err != OK) return err;
         }
 
@@ -81,7 +80,7 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         if ((*str)[0] != ')') return INVALID_FORMAT;
         (*str)++;
     }
-    else {
+    else { // FIXME make functions
         char token[32] = {0};
         int i = 0;
         while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
@@ -92,7 +91,7 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
 
         if (i == 0) return INVALID_FORMAT;
 
-        // Проверка на специальные константы для терминальных узлов
+
         if (strcmp(token, "e") == 0) {
             *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
             (*node)->parent = parent;
@@ -102,7 +101,7 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
             (*node)->parent = parent;
         }
         else {
-            Errors err = CreateNode(node, token, parent);  // Объявляем err
+            Errors err = CreateNode(node, token, parent);
             if (err != OK) return err;
         }
     }
@@ -155,8 +154,8 @@ Errors CreateNode(Node **dest, const char *str, Node *parent) { // NOTE осво
     return OK;
 }
 
-const char* OpFuncValue(enum NodeType type, int value) {
-    assert((value >= 0) && ((type == OP) || (type == FUNC)));
+Errors OpFuncValue(enum NodeType type, int value, char* str) {
+    assert(str != nullptr);
 
     Decoder op_array[] = {
         {"+",     ADD},
@@ -167,24 +166,32 @@ const char* OpFuncValue(enum NodeType type, int value) {
     };
 
     Decoder func_array[] = { // TODO остальное
-        {"sin",     ADD},
-        {"cos",     SUB},
+        {"sin",     SIN},
+        {"cos",     COS},
+        {"tan",     TAN},
+        {"cot",     COT},
+        {"ln",      LN},
+        {"exp",     EXP},
     };
 
     int op_count = sizeof(op_array) / sizeof(op_array[0]);
     int func_count = sizeof(func_array) / sizeof(func_array[0]);
 
-    assert(value < op_count && value < func_count);
+    assert((type == OP && value < op_count) || (type == FUNC && value < func_count));
 
     switch(type) {
         case OP:
-            return op_array[value].name;
+            strcpy(str, op_array[value].name);
             break;
         case FUNC:
-            return func_array[value].name;
+            strcpy(str, func_array[value].name);
+            printf("%d", value);
             break;
-    }
-    return {0};
+        default:
+            assert(0 && "Error text");
+            break;
+     }
+    return OK;
 }
 
 Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
@@ -198,16 +205,20 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
         {"^",     POW},
     };
 
-    Decoder func_array[] = { // TODO остальное
-        {"sin",     ADD},
-        {"cos",     SUB},
+    Decoder func_array[] = {
+        {"sin",     SIN},
+        {"cos",     COS},
+        {"tan",     TAN},
+        {"cot",     COT},
+        {"ln",      LN},
+        {"exp",     EXP},
     };
 
 
     char* endptr = nullptr;
     double num = strtod(str, &endptr);
 
-    if (*endptr == '\0') { // если число
+    if (*endptr == '\0') {
         *type = NUM;
         value->num = num;
         return OK;
@@ -262,7 +273,6 @@ double Eval(Node *node)
             case POW: return pow(Eval(node->left), Eval(node->right));
 
             default:
-                assert(0);
                 return INVALID_TYPE;
         }
     }
@@ -270,6 +280,10 @@ double Eval(Node *node)
         switch(node->value.func) {
             case SIN: return sin(Eval(node->left));
             case COS: return cos(Eval(node->left));
+            case TAN: return tan(Eval(node->left));
+            case COT: return (1 / tan(Eval(node->left)));
+            case LN:  return log(Eval(node->left));
+            case EXP: return exp(Eval(node->left));
         }
     }
 
@@ -334,38 +348,78 @@ Node* Diff(Node *node) {
                             NewNode(OP, NodeValue {.op = MUL}, COPY_RIGHT, COPY_RIGHT));
             case POW:
                 return NewNode(OP, NodeValue {.op = ADD},
-                       NewNode(OP, NodeValue {.op = MUL},
-                           NewNode(OP, NodeValue {.op = MUL},
-                               COPY_RIGHT,
-                               NewNode(OP, NodeValue {.op = POW},
-                                   COPY_LEFT,
-                                   NewNode(OP, NodeValue {.op = SUB},
-                                       COPY_RIGHT,
-                                       NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr)))),
-                           DIF_LEFT),
-                       NewNode(OP, NodeValue {.op = MUL},
-                           NewNode(OP, NodeValue {.op = MUL},
-                               NewNode(OP, NodeValue {.op = POW},
-                                   COPY_LEFT,
-                                   COPY_RIGHT),
-                               NewNode(FUNC, NodeValue {.func = LN}, COPY_LEFT, nullptr)),
-                           DIF_RIGHT));
+                            NewNode(OP, NodeValue {.op = MUL},
+                                NewNode(OP, NodeValue {.op = MUL},
+                                    COPY_RIGHT,
+                                    NewNode(OP, NodeValue {.op = POW},
+                                        COPY_LEFT,
+                                        NewNode(OP, NodeValue {.op = SUB},
+                                                COPY_RIGHT,
+                                            NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr)))),
+                                DIF_LEFT),
+                            NewNode(OP, NodeValue {.op = MUL},
+                                NewNode(OP, NodeValue {.op = MUL},
+                                    NewNode(OP, NodeValue {.op = POW},
+                                        COPY_LEFT,
+                                        COPY_RIGHT),
+                                    NewNode(FUNC, NodeValue {.func = LN}, COPY_LEFT, nullptr)),
+                                DIF_RIGHT));
             default:
                 return nullptr;
         }
     }
-    if (node->type == FUNC)
-    {
+
+    if (node->type == FUNC) {
         switch(node->value.func) {
             case SIN:
-                return  NewNode(OP, NodeValue {.op = MUL},
-                            NewNode(FUNC, NodeValue {.func = COS}, COPY_LEFT, nullptr),
-                            DIF_LEFT);
-            // case COS:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(FUNC, NodeValue {.func = COS}, COPY_LEFT, nullptr),
+                       DIF_LEFT);
+
+            case COS:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(OP, NodeValue {.op = MUL},
+                           NewNode(NUM, NodeValue {.num = -1}, nullptr, nullptr),
+                           NewNode(FUNC, NodeValue {.func = SIN}, COPY_LEFT, nullptr)),
+                       DIF_LEFT);
+
+            case TAN:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(OP, NodeValue {.op = DIV},
+                           NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                           NewNode(OP, NodeValue {.op = POW},
+                               NewNode(FUNC, NodeValue {.func = COS}, COPY_LEFT, nullptr),
+                               NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr))),
+                       DIF_LEFT);
+
+            case COT:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(OP, NodeValue {.op = MUL},
+                           NewNode(NUM, NodeValue {.num = -1}, nullptr, nullptr),
+                           NewNode(OP, NodeValue {.op = DIV},
+                               NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                               NewNode(OP, NodeValue {.op = POW},
+                                   NewNode(FUNC, NodeValue {.func = SIN}, COPY_LEFT, nullptr),
+                                   NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr)))),
+                       DIF_LEFT);
+
+            case LN:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(OP, NodeValue {.op = DIV},
+                           NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                           COPY_LEFT),
+                       DIF_LEFT);
+
+            case EXP:
+                return NewNode(OP, NodeValue {.op = MUL},
+                       NewNode(FUNC, NodeValue {.func = EXP}, COPY_LEFT, nullptr),
+                       DIF_LEFT);
+
             default:
-                assert(0);
+                return nullptr;
         }
     }
 
     return nullptr;
 }
+

@@ -55,4 +55,8 @@ $(BUILD_DIR)/%.o: %.cpp
 clean:
 	@rm -rf $(BUILD_DIR) $(EXECUTABLE)
 
+test:
+	cd tests
+	make -f MakefileTest
+
 -include $(DEPENDS)
