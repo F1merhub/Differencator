@@ -121,5 +121,6 @@ unsigned long long factorial(int n);
 Node* MultiplyDiff(Node *node, int order);
 Errors ExpandInTaylorSeries(int order);
 Errors TaylorMode();
+Errors ProcessToken(const char** str, Node** node, Node* parent);
 
 #endif

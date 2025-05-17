@@ -30,6 +30,34 @@ const char* SkipWhitespace(const char* str) {
     return str;
 }
 
+// Выносим логику обработки токена в отдельную функцию
+Errors ProcessToken(const char** str, Node** node, Node* parent) {
+    char token[32] = {0};
+    int i = 0;
+
+    // Извлечение токена
+    while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
+        token[i++] = (*str)[0];
+        (*str)++;
+        if (i >= 31) return INVALID_FORMAT;
+    }
+
+    if (i == 0) return INVALID_FORMAT;
+
+    // Создание узла
+    if (strcmp(token, "e") == 0) {
+        *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
+    } else if (strcmp(token, "pi") == 0) {
+        *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
+    } else {
+        Errors err = CreateNode(node, token, parent);
+        if (err != OK) return err;
+    }
+
+    (*node)->parent = parent;
+    return OK;
+}
+
 Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
     *str = SkipWhitespace(*str);
 
@@ -39,36 +67,16 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         (*str)++;
         *str = SkipWhitespace(*str);
 
-        char token[32] = {0};
-        int i = 0;
-        while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
-            token[i++] = (*str)[0];
-            (*str)++;
-            if (i >= 31) return INVALID_FORMAT;
-        }
+        Errors error = ProcessToken(str, node, parent);
+        if (error != OK) return error;
 
-        if (i == 0) return INVALID_FORMAT;
-
-        if (strcmp(token, "e") == 0) {
-            *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
-            (*node)->parent = parent;
-        }
-        else if (strcmp(token, "pi") == 0) {
-            *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
-            (*node)->parent = parent;
-        }
-        else {
-            Errors err = CreateNode(node, token, parent);
-            if (err != OK) return err;
-        }
-
-        if ((*node)->type == FUNC) {
+        if ((*node)->type == FUNC) { // обработка одного арг функции
             *str = SkipWhitespace(*str);
             Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
             if (err != OK) return err;
             (*node)->right = NULL;
         }
-        else {
+        else {                       // обработка двух арг оператора
             *str = SkipWhitespace(*str);
             Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
             if (err != OK) return err;
@@ -82,30 +90,9 @@ Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
         if ((*str)[0] != ')') return INVALID_FORMAT;
         (*str)++;
     }
-    else { // FIXME make functions
-        char token[32] = {0};
-        int i = 0;
-        while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
-            token[i++] = (*str)[0];
-            (*str)++;
-            if (i >= 31) return INVALID_FORMAT;
-        }
-
-        if (i == 0) return INVALID_FORMAT;
-
-
-        if (strcmp(token, "e") == 0) {
-            *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
-            (*node)->parent = parent;
-        }
-        else if (strcmp(token, "pi") == 0) {
-            *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
-            (*node)->parent = parent;
-        }
-        else {
-            Errors err = CreateNode(node, token, parent);
-            if (err != OK) return err;
-        }
+    else {
+        Errors err = ProcessToken(str, node, parent);
+        if (err != OK) return err;
     }
 
     return OK;
@@ -192,6 +179,10 @@ Errors OpFuncValue(enum NodeType type, int value, char* str) {
             strcpy(str, func_array[value].name);
             // printf("%d", value);
             break;
+        case NUM:
+            assert(0);
+        case VAR:
+            assert(0);
         default:
             assert(0 && "Error text");
             break;
@@ -296,6 +287,7 @@ double Eval(Node *node)
             case ARCCOS: return acos(Eval(node->left));
             case ARCTAN: return atan(Eval(node->left));
             case ARCCOT: return ((M_PI / 2) - atan(Eval(node->left)));
+            default: assert(0); // NOTE могу добавить другие функции
         }
     }
 
@@ -614,7 +606,7 @@ Node* SimplifyTree(Node *node) {
             }
             // посчитать константу
             else if (temp->left->type == NUM && temp->right->type == NUM) {
-                int result = 1;
+                double result = 1;
                 for (int i = 0; i < temp->right->value.num; ++i) {
                     result *= temp->left->value.num;
                 }
@@ -749,7 +741,9 @@ int GetMode(int mode_count) {
     assert(mode_count > 0 && mode_count <= KEY_COUNT - KEY_1);
 
     int command = 0;
+
     while(1) {
+        command = getchar();
         while(getchar() != '\n');
         if (command >= KEY_1 && command < KEY_1 + mode_count)
             return command;
