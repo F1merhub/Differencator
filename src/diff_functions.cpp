@@ -45,6 +45,7 @@ Node* Diff(Node *node) {
     assert(node);
 
     // FIXME switch
+    
     if (node->type == NUM)
         return NewNode(NUM, NodeValue {.num = 0}, nullptr, nullptr);
 
