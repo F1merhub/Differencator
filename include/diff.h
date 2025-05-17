@@ -8,10 +8,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "color.h"
 
-const double VAR_VALUE = 5;
-const size_t DUMP_BUFFER_SIZE = 50000;
+extern double VAR_VALUE;
+const size_t DUMP_BUFFER_SIZE = 5000000;
 const int NAME_SIZE = 15;
+const double EPSILON = 0.001;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +26,7 @@ enum Errors
     FILE_NOT_OPEN               = 4,
     INVALID_OPERATION           = 5,
     INVALID_TYPE                = 6,
+    COMMAND_ERROR               = 7
 };
 
 enum NodeType
@@ -54,6 +57,16 @@ enum Func // TODO остальное
     ARCCOS,
     ARCTAN,
     ARCCOT
+};
+
+enum Keys
+{
+    KEY_1 = 49,
+    KEY_2 = 50,
+    KEY_3 = 51,
+    KEY_4 = 52,
+    KEY_5 = 53,
+    KEY_COUNT
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,6 +108,18 @@ Errors BuildTreeFromFile(const char* filename, Node** root);
 double Eval(Node *node);
 Node* Diff(Node *node);
 Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right);
+Node* CopyTree(Node *root);
 Errors OpFuncValue(enum NodeType type, int value, char* str);
 Node* SimplifyTree(Node *node);
+int CompareDoubles(double x, double y);
+int GetMode(int mode_count);
+Errors Menu();
+Errors DumpMode();
+Errors EvalMode();
+Errors DiffMode();
+unsigned long long factorial(int n);
+Node* MultiplyDiff(Node *node, int order);
+Errors ExpandInTaylorSeries(int order);
+Errors TaylorMode();
+
 #endif
