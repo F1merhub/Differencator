@@ -851,10 +851,10 @@ unsigned long long factorial(int n) {
 
 Errors TaylorMode() {
     printf("Посчитать разложение в точке: ");
-    scanf("%lg\n", &VAR_VALUE);
+    scanf("%lg", &VAR_VALUE);
     printf("Посчитать разложение до порядка: ");
     int order = -1;
-    scanf("\n%d\n", &order);
+    scanf("%d", &order);
 
     ExpandInTaylorSeries(order);
 
