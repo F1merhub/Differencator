@@ -1,6 +1,8 @@
 #ifndef _DIFF_H
 #define _DIFF_H
 
+// FIXME нельзая с __ и _ + большая буква
+
 #define _USE_MATH_DEFINES
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,6 +98,8 @@ typedef struct Node
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// FIXME 
+
 Errors FreeTree(Node **node);
 Errors CreateNode(Node **node, const char *str, Node *parent);
 Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value);
@@ -113,14 +117,14 @@ Errors OpFuncValue(enum NodeType type, int value, char* str);
 Node* SimplifyTree(Node *node);
 int CompareDoubles(double x, double y);
 int GetMode(int mode_count);
-Errors Menu();
-Errors DumpMode();
-Errors EvalMode();
-Errors DiffMode();
+Errors Menu(const char* expression_file);
+Errors DumpMode(const char* expression_file);
+Errors EvalMode(const char* expression_file);
+Errors DiffMode(const char* expression_file);
+Errors TaylorMode(const char* expression_file);
 unsigned long long factorial(int n);
 Node* MultiplyDiff(Node *node, int order);
-Errors ExpandInTaylorSeries(int order);
-Errors TaylorMode();
+Errors ExpandInTaylorSeries(const char* expression_file, int order);
 Errors ProcessToken(const char** str, Node** node, Node* parent);
 
 #endif

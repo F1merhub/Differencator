@@ -1,260 +1,7 @@
 #include "diff.h"
 #include "dsl.h"
 
-double VAR_VALUE = 0;
-
-Errors ReadFileToBuffer(const char* filename, char** buffer) {
-    FILE* file = fopen(filename, "r");
-    if (!file)
-        return FILE_NOT_OPEN;
-
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    *buffer = (char*)calloc(file_size + 1, sizeof(char));
-    if (!*buffer) {
-        fclose(file);
-        return MEMORY_ALLOCATION_ERROR;
-    }
-
-    fread(*buffer, 1, file_size, file);
-    (*buffer)[file_size] = '\0';
-
-    fclose(file);
-    return OK;
-}
-
-const char* SkipWhitespace(const char* str) {
-    while (isspace(*str)) str++;
-    return str;
-}
-
-// Выносим логику обработки токена в отдельную функцию
-Errors ProcessToken(const char** str, Node** node, Node* parent) {
-    char token[32] = {0};
-    int i = 0;
-
-    // Извлечение токена
-    while ((*str)[0] != '\0' && !isspace((*str)[0]) && (*str)[0] != '(' && (*str)[0] != ')') {
-        token[i++] = (*str)[0];
-        (*str)++;
-        if (i >= 31) return INVALID_FORMAT;
-    }
-
-    if (i == 0) return INVALID_FORMAT;
-
-    // Создание узла
-    if (strcmp(token, "e") == 0) {
-        *node = NewNode(NUM, NodeValue{.num = M_E}, nullptr, nullptr);
-    } else if (strcmp(token, "pi") == 0) {
-        *node = NewNode(NUM, NodeValue{.num = M_PI}, nullptr, nullptr);
-    } else {
-        Errors err = CreateNode(node, token, parent);
-        if (err != OK) return err;
-    }
-
-    (*node)->parent = parent;
-    return OK;
-}
-
-Errors BuildTreeFromPrefix(const char** str, Node** node, Node* parent) {
-    *str = SkipWhitespace(*str);
-
-    if ((*str)[0] == '\0') return OK;
-
-    if ((*str)[0] == '(') {
-        (*str)++;
-        *str = SkipWhitespace(*str);
-
-        Errors error = ProcessToken(str, node, parent);
-        if (error != OK) return error;
-
-        if ((*node)->type == FUNC) { // обработка одного арг функции
-            *str = SkipWhitespace(*str);
-            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
-            if (err != OK) return err;
-            (*node)->right = NULL;
-        }
-        else {                       // обработка двух арг оператора
-            *str = SkipWhitespace(*str);
-            Errors err = BuildTreeFromPrefix(str, &(*node)->left, *node);
-            if (err != OK) return err;
-
-            *str = SkipWhitespace(*str);
-            err = BuildTreeFromPrefix(str, &(*node)->right, *node);
-            if (err != OK) return err;
-        }
-
-        *str = SkipWhitespace(*str);
-        if ((*str)[0] != ')') return INVALID_FORMAT;
-        (*str)++;
-    }
-    else {
-        Errors err = ProcessToken(str, node, parent);
-        if (err != OK) return err;
-    }
-
-    return OK;
-}
-
-Errors BuildTreeFromFile(const char* filename, Node** root) {
-    char* buffer = NULL;
-    Errors err = ReadFileToBuffer(filename, &buffer);
-    if (err != OK) return err;
-
-    const char* ptr = buffer;
-    err = BuildTreeFromPrefix(&ptr, root, NULL);
-
-    free(buffer);
-    return err;
-}
-
-Errors FreeTree(Node **node) {
-    assert(node);
-
-    if (*node == nullptr)
-    {
-        return OK;
-    }
-
-    FreeTree(&((*node)->left));
-    FreeTree(&((*node)->right));
-
-    free(*node);
-    *node = nullptr;
-
-    return OK;
-}
-
-Errors CreateNode(Node **dest, const char *str, Node *parent) { // NOTE освободить память после использования
-    assert(dest != nullptr && str != nullptr);
-
-    Node* node = (Node*)calloc(1, sizeof(Node));
-    if (node == nullptr)
-        return MEMORY_ALLOCATION_ERROR;
-
-    RecognizeNodeType(str, &(node->type), &(node->value));
-    node->left = nullptr;
-    node->right = nullptr;
-    node->parent = parent;
-    *dest = node;
-
-    return OK;
-}
-
-Errors OpFuncValue(enum NodeType type, int value, char* str) {
-    assert(str != nullptr);
-
-    Decoder op_array[] = {
-        {"+",     ADD},
-        {"-",     SUB},
-        {"*",     MUL},
-        {"/",     DIV},
-        {"^",     POW},
-    };
-
-    Decoder func_array[] = { // TODO остальное
-        {"sin",        SIN},
-        {"cos",        COS},
-        {"tan",        TAN},
-        {"cot",        COT},
-        {"ln",         LN},
-        {"arcsin",     ARCSIN},
-        {"arccos",     ARCCOS},
-        {"arctan",     ARCTAN},
-        {"arccot",     ARCCOT},
-    };
-
-    int op_count = sizeof(op_array) / sizeof(op_array[0]);
-    int func_count = sizeof(func_array) / sizeof(func_array[0]);
-
-    assert((type == OP && value < op_count) || (type == FUNC && value < func_count));
-
-    switch(type) {
-        case OP:
-            strcpy(str, op_array[value].name);
-            break;
-        case FUNC:
-            strcpy(str, func_array[value].name);
-            // printf("%d", value);
-            break;
-        case NUM:
-            assert(0);
-        case VAR:
-            assert(0);
-        default:
-            assert(0 && "Error text");
-            break;
-     }
-    return OK;
-}
-
-Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
-    assert(str != nullptr && type != nullptr && value != nullptr);
-
-    Decoder op_array[] = {
-        {"+",     ADD},
-        {"-",     SUB},
-        {"*",     MUL},
-        {"/",     DIV},
-        {"^",     POW},
-    };
-
-    Decoder func_array[] = {
-        {"sin",        SIN},
-        {"cos",        COS},
-        {"tan",        TAN},
-        {"cot",        COT},
-        {"ln",         LN},
-        {"arcsin",     ARCSIN},
-        {"arccos",     ARCCOS},
-        {"arctan",     ARCTAN},
-        {"arccot",     ARCCOT},
-    };
-
-
-    char* endptr = nullptr;
-    double num = strtod(str, &endptr);
-
-    if (*endptr == '\0') {
-        *type = NUM;
-        value->num = num;
-        return OK;
-    }
-    else if (strlen(str) == 1) {
-
-        if (isalpha(str[0])) {
-            *type = VAR;
-            return OK;
-        }
-        else {
-            int op_count = sizeof(op_array) / sizeof(op_array[0]);
-            for (int i = 0; i < op_count; i++) {
-                if (strcmp(str, op_array[i].name) == 0) {
-                    *type = OP;
-                    value->op = (enum Op)op_array[i].code;
-                    return OK;
-                }
-            }
-            return INVALID_TYPE;
-        }
-    }
-    else {
-        int func_count = sizeof(func_array) / sizeof(func_array[0]);
-        for (int i = 0; i < func_count; i++) {
-            if (strcmp(str, func_array[i].name) == 0) {
-                *type = FUNC;
-                value->func = (enum Func)func_array[i].code;
-                // printf("%d", op_array[i].code);
-                return OK;
-            }
-        }
-        return INVALID_TYPE;
-    }
-
-    return OK;
-}
+double VAR_VALUE = 5;
 
 double Eval(Node *node)
 {
@@ -294,38 +41,10 @@ double Eval(Node *node)
     return OK;
 }
 
-Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right) {
-    Node* node = (Node*)calloc(1, sizeof(Node));
-    if (node == nullptr)
-        return nullptr;
-
-    node->type = type;
-    node->value = value;
-
-    node->left = left;
-    node->right = right;
-
-    if (left)  left->parent  = node;
-    if (right) right->parent = node;
-
-    return node;
-}
-
-Node* CopyTree(Node *root) {
-    assert(root != nullptr);
-
-    Node* node = NewNode(root->type, root->value, nullptr, nullptr);
-
-    if (root->left != nullptr)
-        node->left  = CopyTree(root->left);
-    if (root->right != nullptr)
-        node->right = CopyTree(root->right);
-
-    return node;
-}
-
 Node* Diff(Node *node) {
     assert(node);
+
+    // FIXME switch
     if (node->type == NUM)
         return NewNode(NUM, NodeValue {.num = 0}, nullptr, nullptr);
 
@@ -491,7 +210,7 @@ Node* SimplifyTree(Node *node) {
     else if (node->type == VAR)
         return NewNode(VAR, node->value, nullptr, nullptr);
 
-    else if (node->type == OP) {
+    else if (node->type == OP) { // TODO в функцию
         Node* temp = NewNode(OP, NodeValue {.op = node->value.op}, SimplifyTree(node->left), SimplifyTree(node->right));
         if (temp->left == nullptr || temp->right == nullptr) {
             FreeTree(&temp);
@@ -500,17 +219,16 @@ Node* SimplifyTree(Node *node) {
 
         if (node->value.op == ADD || node->value.op == SUB) { // СУММА РАЗНОСТЬ
             if (temp->left->type == NUM && temp->right->type == NUM) { // Если две константы
-                    if (temp->value.op == ADD) {
-                        Node* temp_num = NewNode(NUM, NodeValue {.num = temp->left->value.num + temp->right->value.num}, nullptr, nullptr);
-                        FreeTree(&temp);
-                        return temp_num;
-                    }
-                    else if (temp->value.op == SUB) {
-                        Node* temp_num = NewNode(NUM, NodeValue {.num = temp->left->value.num - temp->right->value.num}, nullptr, nullptr);
-                        FreeTree(&temp);
-                        return temp_num;
-                    }
-                    else assert(0);
+                double temp_op = 0;
+                if (temp->value.op == ADD)
+                    temp_op = temp->left->value.num + temp->right->value.num;
+                else if (temp->value.op == SUB)
+                    temp_op = temp->left->value.num - temp->right->value.num;
+
+                NewNode(NUM, NodeValue {.num = temp_op}, nullptr, nullptr);
+                FreeTree(&temp);
+                return temp_num;
+
             }
             else if (temp->left->type == NUM && CompareDoubles(temp->left->value.num, 0)) { // сумма, разность с нулем
                 Node* temp_node = temp->right;
@@ -687,6 +405,7 @@ Node* SimplifyTree(Node *node) {
     }
     else
         assert(0); // если неизвестный тип
+    return nullptr;
 }
 
 int CompareDoubles(double x, double y) {
@@ -696,145 +415,6 @@ int CompareDoubles(double x, double y) {
     else
         return 0;
 
-}
-
-Errors Menu() {
-
-    printf("\nDifferencator\n"
-           "(c) F1mer\n\n"
-           "Выберите Режим\n"
-           "[1] - Посчитать значение функции в точке\n"
-           "[2] - Продифференцировать выражение\n"
-           "[3] - Разложить в ряд Тейлора\n"
-           "[4] - Распечатка Выражения\n"
-           "[5] - Выход\n"
-           "Ваш ответ: ");
-
-    int command = 0;
-    command = GetMode(5); // TODO const
-
-    switch(command) {
-        case(KEY_1):
-            EvalMode();
-            break;
-        case(KEY_2):
-            DiffMode();
-            break;
-        case(KEY_3):
-            TaylorMode();
-            break;
-        case(KEY_4):
-            DumpMode();
-            break;
-        case(KEY_5):
-            printf("Выход\n");
-            break;
-        default:
-            assert(0);
-            break;
-    }
-
-    return OK;
-}
-
-int GetMode(int mode_count) {
-    assert(mode_count > 0 && mode_count <= KEY_COUNT - KEY_1);
-
-    int command = 0;
-
-    while(1) {
-        command = getchar();
-        while(getchar() != '\n');
-        if (command >= KEY_1 && command < KEY_1 + mode_count)
-            return command;
-        else
-            printf("Неверная комманда, попробуйте еще раз\n"
-                   "Ваш ответ: ");
-    }
-}
-
-Errors DumpMode() {
-    Node *Root = nullptr;
-    Errors err = BuildTreeFromFile("./expression.txt", &Root);
-
-    if (err == OK) {
-        printf("\n%sTREE WAS PARCED%s\n", COLOR_PASS, COLOR_RESET);
-    } else {
-        printf("%sWRONG FORMAT OF FILE%s\n", COLOR_FAIL, COLOR_RESET);
-        return err;
-    }
-
-    TreeDumpDot(Root);
-    int error = system("dot -Tpng ./GraphDump/dump.dot -o ./GraphDump/Expression.png");
-    if (error != 0)
-        return COMMAND_ERROR;
-
-    printf("Выражение в Expression.png\n");
-    FreeTree(&Root);
-
-    Menu();
-
-    return OK;
-}
-
-Errors EvalMode() {
-    Node *Root = nullptr;
-    Errors err = BuildTreeFromFile("./expression.txt", &Root);
-
-    if (err == OK) {
-        printf("\n%sTREE WAS PARCED%s\n", COLOR_PASS, COLOR_RESET);
-    } else {
-        printf("%sWRONG FORMAT OF FILE%s\n", COLOR_FAIL, COLOR_RESET);
-        return err;
-    }
-
-    printf("\nПосчитать выражение в точке x = ");
-    scanf("%lg", &VAR_VALUE);
-
-    double result = Eval(Root);
-    printf("Значение функции в точке %lg = %lg\n", VAR_VALUE, result);
-
-    FreeTree(&Root);
-
-    Menu();
-
-    return OK;
-}
-
-Errors DiffMode() {
-    Node *Root = nullptr;
-    Errors err = BuildTreeFromFile("./expression.txt", &Root);
-
-    if (err == OK) {
-        printf("\n%sTREE WAS PARCED%s\n", COLOR_PASS, COLOR_RESET);
-    } else {
-        printf("%sWRONG FORMAT OF FILE%s\n", COLOR_FAIL, COLOR_RESET);
-        return err;
-    }
-
-    Node *DiffRoot = Diff(Root);
-    Node *SimplifyRoot = SimplifyTree(DiffRoot);
-
-    TreeDumpDot(SimplifyRoot);
-    int error = system("dot -Tpng ./GraphDump/dump.dot -o ./GraphDump/Diff.png");
-    if (error != 0)
-        return COMMAND_ERROR;
-
-    printf("Продифференцированное дерево в файле Diff.png");
-
-    printf("\nПосчитать производную в точке x = ");
-    scanf("%lg", &VAR_VALUE);
-
-    double result = Eval(SimplifyRoot);
-    printf("Производная функции в точке %lg = %lg\n", VAR_VALUE, result);
-
-    FreeTree(&Root);
-    FreeTree(&SimplifyRoot);
-    FreeTree(&DiffRoot);
-
-    Menu();
-
-    return OK;
 }
 
 unsigned long long factorial(int n) {
@@ -849,24 +429,11 @@ unsigned long long factorial(int n) {
     return result;
 }
 
-Errors TaylorMode() {
-    printf("Посчитать разложение в точке: ");
-    scanf("%lg", &VAR_VALUE);
-    printf("Посчитать разложение до порядка: ");
-    int order = -1;
-    scanf("%d", &order);
-
-    ExpandInTaylorSeries(order);
-
-    Menu();
-    return OK;
-}
-
-Errors ExpandInTaylorSeries(int order) {
+Errors ExpandInTaylorSeries(const char* expression_file, int order) {
     assert(order >= 0);
 
     Node *Root = nullptr;
-    Errors err = BuildTreeFromFile("./expression.txt", &Root);
+    Errors err = BuildTreeFromFile(expression_file, &Root);
 
     if (err == OK) {
         printf("\n%sTREE WAS PARCED%s\n", COLOR_PASS, COLOR_RESET);

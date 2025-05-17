@@ -8,11 +8,10 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/debug",  // Исполняемый файл, а не .cpp!
+      "cwd": "/home/samir/repositories/Differencator/src",
+      "program": "/home/samir/repositories/Differencator/src/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
-      "preLaunchTask": "Build C++ Project",  // Запускать сборку перед отладкой
       "setupCommands": [
         {
           "description": "Enable pretty-printing for gdb",

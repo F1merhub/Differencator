@@ -25,7 +25,7 @@ BUILD_DIR = tests/build
 
 EXECUTABLE = ./tests/tests
 
-SOURCES = tests/main.cpp src/diff_functions.cpp src/DiffGraphDump.cpp
+SOURCES = tests/main.cpp src/diff_functions.cpp src/DiffGraphDump.cpp src/treefunc.cpp src/MenuFunc.cpp
 
 OBJECTS = $(addprefix $(BUILD_DIR)/, $(SOURCES:%.cpp=%.o))
 DEPENDS = $(OBJECTS:.o=.d)
