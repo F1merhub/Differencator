@@ -9,9 +9,9 @@
 #include <ctype.h>
 #include <math.h>
 
-const double VAR_VALUE = M_PI;
+const double VAR_VALUE = 5;
 const size_t DUMP_BUFFER_SIZE = 50000;
-const int NAME_SIZE = 10;
+const int NAME_SIZE = 15;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -50,7 +50,10 @@ enum Func // TODO остальное
     TAN,
     COT,
     LN,
-    EXP,
+    ARCSIN,
+    ARCCOS,
+    ARCTAN,
+    ARCCOT
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,4 +96,5 @@ double Eval(Node *node);
 Node* Diff(Node *node);
 Node* NewNode(NodeType type, NodeValue value, Node* left, Node* right);
 Errors OpFuncValue(enum NodeType type, int value, char* str);
+Node* SimplifyTree(Node *node);
 #endif

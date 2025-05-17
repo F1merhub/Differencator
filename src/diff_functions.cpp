@@ -166,12 +166,15 @@ Errors OpFuncValue(enum NodeType type, int value, char* str) {
     };
 
     Decoder func_array[] = { // TODO остальное
-        {"sin",     SIN},
-        {"cos",     COS},
-        {"tan",     TAN},
-        {"cot",     COT},
-        {"ln",      LN},
-        {"exp",     EXP},
+        {"sin",        SIN},
+        {"cos",        COS},
+        {"tan",        TAN},
+        {"cot",        COT},
+        {"ln",         LN},
+        {"arcsin",     ARCSIN},
+        {"arccos",     ARCCOS},
+        {"arctan",     ARCTAN},
+        {"arccot",     ARCCOT},
     };
 
     int op_count = sizeof(op_array) / sizeof(op_array[0]);
@@ -185,7 +188,7 @@ Errors OpFuncValue(enum NodeType type, int value, char* str) {
             break;
         case FUNC:
             strcpy(str, func_array[value].name);
-            printf("%d", value);
+            // printf("%d", value);
             break;
         default:
             assert(0 && "Error text");
@@ -206,12 +209,15 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
     };
 
     Decoder func_array[] = {
-        {"sin",     SIN},
-        {"cos",     COS},
-        {"tan",     TAN},
-        {"cot",     COT},
-        {"ln",      LN},
-        {"exp",     EXP},
+        {"sin",        SIN},
+        {"cos",        COS},
+        {"tan",        TAN},
+        {"cot",        COT},
+        {"ln",         LN},
+        {"arcsin",     ARCSIN},
+        {"arccos",     ARCCOS},
+        {"arctan",     ARCTAN},
+        {"arccot",     ARCCOT},
     };
 
 
@@ -246,7 +252,8 @@ Errors RecognizeNodeType(const char *str, NodeType* type, NodeValue* value) {
         for (int i = 0; i < func_count; i++) {
             if (strcmp(str, func_array[i].name) == 0) {
                 *type = FUNC;
-                value->func = (enum Func)op_array[i].code;
+                value->func = (enum Func)func_array[i].code;
+                // printf("%d", op_array[i].code);
                 return OK;
             }
         }
@@ -283,7 +290,10 @@ double Eval(Node *node)
             case TAN: return tan(Eval(node->left));
             case COT: return (1 / tan(Eval(node->left)));
             case LN:  return log(Eval(node->left));
-            case EXP: return exp(Eval(node->left));
+            case ARCSIN: return asin(Eval(node->left));
+            case ARCCOS: return acos(Eval(node->left));
+            case ARCTAN: return atan(Eval(node->left));
+            case ARCCOT: return ((M_PI / 2) - atan(Eval(node->left)));
         }
     }
 
@@ -410,10 +420,57 @@ Node* Diff(Node *node) {
                            COPY_LEFT),
                        DIF_LEFT);
 
-            case EXP:
+            case ARCSIN:
                 return NewNode(OP, NodeValue {.op = MUL},
-                       NewNode(FUNC, NodeValue {.func = EXP}, COPY_LEFT, nullptr),
-                       DIF_LEFT);
+                    NewNode(OP, NodeValue {.op = DIV},
+                        NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                        NewNode(OP, NodeValue {.op = POW},
+                            NewNode(OP, NodeValue {.op = SUB},
+                                NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                                NewNode(OP, NodeValue {.op = POW},
+                                    COPY_LEFT,
+                                    NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr))),
+                            NewNode(NUM, NodeValue {.num = 0.5}, nullptr, nullptr))),
+                    DIF_LEFT);
+
+            case ARCCOS:
+                return NewNode(OP, NodeValue {.op = MUL},
+                    NewNode(OP, NodeValue {.op = MUL},
+                        NewNode(NUM, NodeValue {.num = -1}, nullptr, nullptr),
+                        NewNode(OP, NodeValue {.op = DIV},
+                            NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                            NewNode(OP, NodeValue {.op = POW},
+                                NewNode(OP, NodeValue {.op = SUB},
+                                    NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                                    NewNode(OP, NodeValue {.op = POW},
+                                        COPY_LEFT,
+                                        NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr))),
+                                NewNode(NUM, NodeValue {.num = 0.5}, nullptr, nullptr)))),
+                    DIF_LEFT);
+
+            case ARCTAN:
+                return NewNode(OP, NodeValue {.op = MUL},
+                    NewNode(OP, NodeValue {.op = DIV},
+                        NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                        NewNode(OP, NodeValue {.op = ADD},
+                            NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                            NewNode(OP, NodeValue {.op = POW},
+                                COPY_LEFT,
+                                NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr)))),
+                    DIF_LEFT);
+
+            case ARCCOT:
+                return NewNode(OP, NodeValue {.op = MUL},
+                    NewNode(OP, NodeValue {.op = MUL},
+                        NewNode(NUM, NodeValue {.num = -1}, nullptr, nullptr),
+                        NewNode(OP, NodeValue {.op = DIV},
+                            NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                            NewNode(OP, NodeValue {.op = ADD},
+                                NewNode(NUM, NodeValue {.num = 1}, nullptr, nullptr),
+                                NewNode(OP, NodeValue {.op = POW},
+                                    COPY_LEFT,
+                                    NewNode(NUM, NodeValue {.num = 2}, nullptr, nullptr))))),
+                    DIF_LEFT);
 
             default:
                 return nullptr;
@@ -421,5 +478,55 @@ Node* Diff(Node *node) {
     }
 
     return nullptr;
+}
+
+Node* SimplifyTree(Node *node) {
+    assert(node != nullptr);
+
+    if (node->type == NUM)
+        return NewNode(NUM, node->value, nullptr, nullptr);
+    else if (node->type == VAR)
+        return NewNode(VAR, NodeValue {.num = 0}, nullptr, nullptr);
+    else if (node->type == OP) {
+
+            if (node->value.op == ADD || node->value.op == SUB) {
+                Node* temp = NewNode(OP, NodeValue {.op = node->value.op}, SimplifyTree(node->left), SimplifyTree(node->right));
+                if (temp->left->type == NUM && temp->right->type == NUM) { // Если две константы
+                        if (temp->value.op == ADD) {
+                            Node* temp_num = NewNode(NUM, NodeValue {.num = temp->left->value.num + temp->right->value.num}, nullptr, nullptr);
+                            FreeTree(&temp);
+                            return temp_num;
+                        }
+                        else if (temp->value.op == SUB) {
+                            Node* temp_num = NewNode(NUM, NodeValue {.num = temp->left->value.num - temp->right->value.num}, nullptr, nullptr);
+                            FreeTree(&temp);
+                            return temp_num;
+                        }
+                        else assert(0);
+                }
+                else if (temp->left->type == NUM && temp->left->value.num == 0) { // сумма, разность с нулем
+                    Node* temp_node = temp->right;
+                    free(temp->left);
+                    free(temp);
+                    return temp_node;
+                }
+                else if (temp->right->type == NUM && temp->right->value.num == 0) {
+                    Node* temp_node = temp->left;
+                    free(temp->right);
+                    free(temp);
+                    return temp_node;
+                }
+                else
+                    return temp;
+
+            }
+            else if (node->value.op == DIV || node->value.op == MUL) {
+                return NewNode(node->type, node->value, SimplifyTree(node->left), SimplifyTree(node->right));
+            }
+    }
+    else if (node->type == FUNC)
+        return NewNode(node->type, node->value, SimplifyTree(node->left), nullptr);
+    else
+        assert(0);
 }
 

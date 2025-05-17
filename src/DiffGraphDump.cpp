@@ -120,5 +120,6 @@ int GenerateGraph(Node *node, char* buffer, int* buffer_len, const size_t BUFFER
                               "\tnode%p:right -> node%p [color=\"#f9e2af\"]\n", node, node->right);
     }
 
+
     return 0;
 }

@@ -4,8 +4,7 @@
 Errors DiffTests(char* argv[]);
 Errors EvalTests(char* argv[]);
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if (argc == 4 && strcmp(argv[1], "eval") == 0) {
         Errors err = EvalTests(argv);
         return err;
@@ -14,10 +13,10 @@ int main(int argc, char* argv[])
         Errors err = DiffTests(argv);
         return err;
     }
+
 }
 
-Errors EvalTests(char* argv[])
-{
+Errors EvalTests(char* argv[]) {
     const char* input_path = argv[2];
     const char* output_path = argv[3];
 
