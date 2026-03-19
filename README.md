@@ -24,7 +24,8 @@ expression.txt
 ## Сборка
 
 ```id="6j8q1w"
-make do
+make
+do
 ```
 
 ## Требования
