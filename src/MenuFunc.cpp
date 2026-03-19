@@ -13,7 +13,7 @@ Errors Menu(const char* expression_file) {
            "Ваш ответ: ");
 
     int command = 0;
-    command = GetMode(5); // TODO const
+    command = GetMode(5); 
 
     switch(command) {
         case(KEY_1):
@@ -43,15 +43,24 @@ int GetMode(int mode_count) {
     assert(mode_count > 0 && mode_count <= KEY_COUNT - KEY_1);
 
     int command = 0;
+    int ch = 0;
 
-    while(1) {
+    while (1) {
         command = getchar();
-        while(getchar() != '\n'); // FIXME fix buffer clear
-        if (command >= KEY_1 && command < KEY_1 + mode_count)
+
+        if (command == EOF) {
+            return EOF;
+        }
+        
+        while ((ch = getchar()) != '\n' && ch != EOF) {
+        }
+
+        if (command >= KEY_1 && command < KEY_1 + mode_count) {
             return command;
-        else
-            printf("Неверная комманда, попробуйте еще раз\n"
-                   "Ваш ответ: ");
+        }
+
+        printf("Неверная команда, попробуйте еще раз\n"
+               "Ваш ответ: ");
     }
 }
 
@@ -107,11 +116,10 @@ Errors DiffMode(const char* expression_file) {
     Node *Root = nullptr;
     Errors err = BuildTreeFromFile(expression_file, &Root);
 
-    // FIXME ошибки пиши в stderr 
     if (err == OK) {
         printf("\n%sTREE WAS PARCED%s\n", COLOR_PASS, COLOR_RESET);
     } else {
-        printf("%sWRONG FORMAT OF FILE%s\n", COLOR_FAIL, COLOR_RESET);
+        fprintf(stderr, "%sWRONG FORMAT OF FILE%s\n", COLOR_FAIL, COLOR_RESET);
         return err;
     }
 
