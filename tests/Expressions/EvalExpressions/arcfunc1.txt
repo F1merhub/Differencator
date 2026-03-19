@@ -1,1 +1,0 @@
-(/ (- (arccos (/ x 10) ) (arcsin (/ x 10))) (arccot (arctan (^ x 2))))
