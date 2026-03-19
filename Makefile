@@ -10,7 +10,7 @@ DEBUG_FLAGS =	-g -O0 -Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef
 				-Wwrite-strings -Werror=vla -D_DEBUG -D_EJUDGE_CLIENT_SIDE
 
 RELEASE_FLAGS =  -O2 -DNDEBUG -Wall -Wextra -Wpedantic -Werror=return-type -Werror=uninitialized -Wno-error=unused-parameter \
-				-Wno-error=unused-variable -Wconversion -Wsign-compare -Wnull-dereference -Wformat=2 -Warray-bounds           \
+				-Wno-error=unused-variable -Wconversion -Wsign-compare -Wnull-dereference -Warray-bounds           \
 				-fno-strict-aliasing
 
 ifeq ($(DEBUG),1)
