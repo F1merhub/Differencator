@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
 
-    // const char* expression_file = argc < 2 ? "./expression.txt" : argv[1];
+    // const char* expression_file = argc < 2 ? "./expression.txt" : argv[1]
 
     const char* expression_file = NULL;
 
