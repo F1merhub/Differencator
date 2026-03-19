@@ -219,7 +219,7 @@ Node* SimplifyTree(Node *node) {
                 else if (temp->value.op == SUB)
                     temp_op = temp->left->value.num - temp->right->value.num;
 
-                NewNode(NUM, NodeValue {.num = temp_op}, nullptr, nullptr);
+                Node* temp_num = NewNode(NUM, NodeValue {.num = temp_op}, nullptr, nullptr);
                 FreeTree(&temp);
                 return temp_num;
 
